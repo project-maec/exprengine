@@ -207,7 +207,7 @@ def _ts_product(x1, d: int):
 
 def _ts_mean(x1, d: int):
     """moving average"""
-    return pd.Series(x1).rolling(d, min_periods=int(d / 2)).mean().values
+    return (x1).rolling(int(d), min_periods=int(d / 2)).mean()
 
 
 def _ts_std(x1, d: int):
@@ -302,13 +302,19 @@ def _ts_argmaxmin(x1, d: int):
     return _ts_argmax(x1, d) - _ts_argmin(x1, d)
 
 
-def _ts_rank(x1, d: int):
+def _ts_rank_legacy(x1, d: int):
     """moving quantile of current x1"""
     arr_window = __rolling(pd.Series(x1), d).values
     rank = (arr_window[..., -1:] >= arr_window).sum(axis=1) / d
     for i in range(d - 1):
         rank[i] = np.nan
     return rank
+
+def _ts_rank(x1, d: int):
+    if d <= 0:
+        raise ValueError('d value must be greater than 0')
+    rank_val = x1.rolling(int(d),int(d)).rank()
+    return rank_val/d
 
 
 def _ts_ema(x1, d: int):
