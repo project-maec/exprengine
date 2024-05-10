@@ -18,20 +18,22 @@ class Function:
         self.is_ts = is_ts  # for backward compatibility 0: basis function, >0: time-series function
         self.function_type = function_type # 0-->basic functions; 1--> ts functions; 2--> cross-sectional functions
         if self.is_ts==1:
-            self.function_type==1
+            self.function_type=1
         # arguments forced to be certain variables
         self.fixed_params = [] if fixed_params is None else fixed_params
 
     def __call__(self, *args):
         if len(args)<=1:
             return self.function(*args)
-        for idx in range(len(args)):
-            a = args[idx] 
+        args_list = list(args)
+        for idx in range(len(args_list)):
+            a = args_list[idx] 
             if isinstance(a, numbers.Number):
                 if self.function_type == 0:
-                    const_var = np.ones(args[0].shape).mask(args[0].isna())
-                    args[idx] = const_var
-        return self.function(*args)
+                    const_var = np.ones(args[0].shape)
+                    const_var = np.where(args[0].isna(),np.nan, const_var)
+                    args_list[idx] = const_var
+        return self.function(*tuple(args_list))
 
 
 def __rolling(x1: pd.Series, d: int, function=None, **kwargs) -> np.ndarray:
