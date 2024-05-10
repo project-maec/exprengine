@@ -8,21 +8,19 @@ import pandas as pd
 from .function import Function
 from .function import function_map
 from .fitness import Fitness
-from .syntaxtree import Node
+from .syntax_tree import Node
 
 
 
 class Parser:
-    def __init__(self) -> None:
+    def __init__(self, list_dataname=[]) -> None:
         """
-        Vectorized factor backtesting (factor -> signal -> asset)
-        [factor] outcome of SyntaxTree.execute(X)
-        [signal] trading decision at the end of the datetime (>0: long, <0: short, =0: hold)
-        [asset] backtesting result of an account applying the strategy
+        @param list_dataname: list of data fields allowed
         """
+        self.list_dataname = list_dataname
 
 
-    def parse_formula(self,expression):
+    def parse(self,expression):
         # This is a simplistic parser assuming well-formed input and does not handle errors
         if '(' in expression:
             name_expr = expression[:expression.find('(')]
@@ -38,19 +36,21 @@ class Parser:
             args = []
             depth = 0
             last_split = 0
-            # Split arguments considering nested functions
+            # split arguments considering nested functions
             for i, char in enumerate(inside_parenthesis):
                 if char == '(':
                     depth += 1
                 elif char == ')':
                     depth -= 1
                 elif char == ',' and depth == 0:
-                    args.append(self.parse_formula(inside_parenthesis[last_split:i].strip()))
+                    args.append(self.parse(inside_parenthesis[last_split:i].strip()))
                     last_split = i + 1
-            args.append(self.parse_formula(inside_parenthesis[last_split:].strip()))
+            args.append(self.parse(inside_parenthesis[last_split:].strip()))
             return Node(data, args)
         else:
-            print(expression)
             if expression.isnumeric():
                 expression=float(expression)
+            else:
+                if (not expression in self.list_dataname) and (len(self.list_dataname) > 0):
+                    raise ValueError(f'{expression} not in allowed list of dataname')
             return Node(expression)

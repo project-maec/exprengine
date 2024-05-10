@@ -11,3 +11,8 @@ References:
 __version__ = "0.1.6"
 
 __all__ = ["function", "fitness", "parser", "syntax_tree"]
+
+from .function import *
+from .fitness import *
+from .parser import *
+from .syntax_tree import *
