@@ -2,23 +2,35 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import numbers
 
 warnings.filterwarnings("ignore")  # prevent reporting 'All-NaN slice encountered'
 
 
 class Function:
     def __init__(
-        self, function, name: str, arity: int, is_ts: int = 0, fixed_params: list = None
+        self, function, name: str, arity: int, is_ts: int = 0, function_type: int=0, fixed_params: list = None
     ) -> None:
         self.function = function  # function
         self.name = name  # function name
         self.arity = arity  # number of function arguments
         # number of parameters forced to be constants
-        self.is_ts = is_ts  # 0: basis function, >0: time-series function
+        self.is_ts = is_ts  # for backward compatibility 0: basis function, >0: time-series function
+        self.function_type = function_type # 0-->basic functions; 1--> ts functions; 2--> cross-sectional functions
+        if self.is_ts==1:
+            self.function_type==1
         # arguments forced to be certain variables
         self.fixed_params = [] if fixed_params is None else fixed_params
 
     def __call__(self, *args):
+        if len(args)<=1:
+            return self.function(*args)
+        for idx in range(len(args)):
+            a = args[idx] 
+            if isinstance(a, numbers.Number):
+                if self.function_type == 0:
+                    const_var = np.ones(args[0].shape).mask(args[0].isna())
+                    args[idx] = const_var
         return self.function(*args)
 
 

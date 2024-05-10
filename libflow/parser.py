@@ -22,14 +22,17 @@ class Parser:
 
     def parse(self,expression):
         # This is a simplistic parser assuming well-formed input and does not handle errors
+        """
+        @param parent_is_ts_func: 
+        """
         if '(' in expression:
             name_expr = expression[:expression.find('(')]
-            is_ts = False
+            # is_ts_func = False
             if name_expr in function_map.keys():
                 # it's a function
                 data = function_map[name_expr]
-                if name_expr.startswith('ts_'):
-                    is_ts =True
+                # if name_expr.startswith('ts_'):
+                #     is_ts_func =True
             elif name_expr.isnumeric():
                 raise TypeError('numerical value is not callable')
             else:
@@ -50,7 +53,7 @@ class Parser:
                     args.append(self.parse(inside_parenthesis[last_split:i].strip()))
                     last_split = i + 1
             args.append(self.parse(inside_parenthesis[last_split:].strip()))
-            return Node(data, args, is_ts)
+            return Node(data, args)
         else:
             if expression.isnumeric():
                 expression=float(expression)

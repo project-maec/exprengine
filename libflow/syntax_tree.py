@@ -36,11 +36,13 @@ class Node:
             return self.data(*fixed_var, *free_var)
         elif isinstance(self.data, str):
             return X[self.data]
-        elif self.is_ts:
-            return self.data
+        # elif self.is_ts:
+            # return self.data
         else:
             # input except time-series constant must be a vector
-            return np.full(len(X), self.data)
+            # return np.full(len(X), self.data)
+            # simply return vector
+            return self.data
 
     def add_child(self, child: "Node"):
         # always insert to the front
