@@ -22,7 +22,7 @@ class Parser:
         """
 
 
-    def parse_formula(expression):
+    def parse_formula(self,expression):
         # This is a simplistic parser assuming well-formed input and does not handle errors
         if '(' in expression:
             name_expr = expression[:expression.find('(')]
@@ -45,9 +45,9 @@ class Parser:
                 elif char == ')':
                     depth -= 1
                 elif char == ',' and depth == 0:
-                    args.append(parse_formula(inside_parenthesis[last_split:i].strip()))
+                    args.append(self.parse_formula(inside_parenthesis[last_split:i].strip()))
                     last_split = i + 1
-            args.append(parse_formula(inside_parenthesis[last_split:].strip()))
+            args.append(self.parse_formula(inside_parenthesis[last_split:].strip()))
             return Node(data, args)
         else:
             print(expression)
