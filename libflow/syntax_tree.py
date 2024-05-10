@@ -1,6 +1,7 @@
 import random
 from copy import deepcopy
 from typing import Any
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -28,7 +29,7 @@ class Node:
             else:
                 return f"{self.data}"
 
-    def __call__(self, X: pd.DataFrame):
+    def __call__(self, X: Union[pd.DataFrame, dict]):
         if isinstance(self.data, Function):
             fixed_var = [X[param] for param in self.data.fixed_params]
             free_var = [node(X) for node in self.children]
