@@ -58,6 +58,16 @@ class Node:
         # also set parent of new child
         new_child.parent = self
 
+    def fitness(self, X: Union[pd.DataFrame, dict], y):
+        """
+        @param X: input
+        @param y: label
+        """
+
+        return
+    
+
+
 class SyntaxTree:
     def __init__(
         self,

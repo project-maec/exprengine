@@ -149,6 +149,16 @@ def _min(x1, x2):
 def _mean(x1, x2):
     return (x1 + x2) / 2
 
+def _rank_array(a):
+    a2 = a[~np.isnan(a)]
+    if a2.shape[0]<=1:
+        return a
+    u, v = np.unique(a2, return_inverse=True)
+    a3 = (np.cumsum(np.bincount(v, minlength=u.size)) - 1)[v]
+    a3 = 2*((a3)/np.max(a3) - 0.5)
+    res = a.copy().astype('float')
+    res[~np.isnan(res)] = a3
+    return res
 
 def _clear_by_cond(x1, x2, x3):
     """if x1 < x2 (keep NaN if and only if both x1 and x2 are NaN), then 0, else x3"""
@@ -164,6 +174,16 @@ def _if_cond_then_else(x1, x2, x3, x4):
     """if x1 < x2 (keep NaN if and only if both x1 and x2 are NaN), then x3, else x4"""
     return np.where(x1 < x2, x3, np.where(~np.isnan(x1) | ~np.isnan(x2), x4, np.nan))
 
+def _cs_rank(x1):
+    if isinstance(x1,pd.DataFrame):
+        res = x1.copy()
+        res.loc[:] = np.apply_along_axis(_rank_array,axis=1,arr=x1.values)
+        return res
+    elif isinstance(x1, np.ndarray):
+        res = np.apply_along_axis(_rank_array,axis=1,arr=x1)
+        return res
+    else:
+        raise TypeError('input must be pd.DataFrame or np.ndarray')
 
 def _ts_delay(x1, d: int):
     """x1 d datetimes ago"""
@@ -522,6 +542,9 @@ ts_ADX4 = Function(
 ts_MFI5 = Function(
     function=_ts_MFI, name="ts_MFI", arity=5, is_ts=1, fixed_params=["H", "L", "C", "V"]
 )
+# 4. cross-sectional functions
+# 4.1 simple
+cs_rank = Function(function=_cs_rank, name='cs_rank', arity=1, function_type=2)
 
 
 function_map = {
@@ -585,4 +608,5 @@ function_map = {
     "ts_NATR": ts_NATR4,
     "ts_ADX": ts_ADX4,
     "ts_MFI": ts_MFI5,
+    "cs_rank": cs_rank,
 }
