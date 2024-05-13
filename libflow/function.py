@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import numbers
+import scipy
 
 # prevent reporting 'All-NaN slice encountered'
 warnings.filterwarnings("ignore")
@@ -155,7 +156,10 @@ def _mul(x1, x2):
 def _div(x1, x2):
     """closure of division (x1/x2) for zero denominator"""
     with np.errstate(divide="ignore", invalid="ignore"):
-        return np.where(np.abs(x2) > 0.001, np.divide(x1, x2), 1.0)
+        if isinstance(x1, pd.DataFrame):
+            return pd.DataFrame(np.where(np.abs(x2) > 0.001, np.divide(x1, x2), 1.0), columns=x1.columns, index=x1.index)
+        else:
+            return np.where(np.abs(x2) > 0.001, np.divide(x1, x2), 1.0)
 
 
 def _max(x1, x2):
@@ -177,6 +181,18 @@ def _rank_array(a):
     u, v = np.unique(a2, return_inverse=True)
     a3 = (np.cumsum(np.bincount(v, minlength=u.size)) - 1)[v]
     a3 = 2*((a3)/np.max(a3) - 0.5)
+    res = a.copy().astype('float')
+    res[~np.isnan(res)] = a3
+    return res
+
+def _rank_norm(a):
+    a2 = a[~np.isnan(a)]
+    if a2.shape[0]<=1:
+        return a
+    u, v = np.unique(a2, return_inverse=True)
+    a3 = (np.cumsum(np.bincount(v, minlength=u.size)) - 1)[v]
+    a3 = (a3)/np.max(a3)
+    a3 = scipy.stats.norm.ppf(np.clip(a3,0.0001,1-0.0001))
     res = a.copy().astype('float')
     res[~np.isnan(res)] = a3
     return res
@@ -208,6 +224,18 @@ def _cs_rank(x1):
     else:
         raise TypeError('input must be pd.DataFrame or np.ndarray')
 
+def _cs_rank_norm(x1):
+    if isinstance(x1, pd.DataFrame):
+        res = x1.copy()
+        res.loc[:] = np.apply_along_axis(_rank_norm, axis=1, arr=x1.values)
+        return res
+    elif isinstance(x1, np.ndarray):
+        res = np.apply_along_axis(_rank_norm, axis=1, arr=x1)
+        return res
+    else:
+        raise TypeError('input must be pd.DataFrame or np.ndarray')   
+
+
 
 def _ts_delay_legacy(x1, d: int):
     """x1 d datetimes ago"""
@@ -221,7 +249,7 @@ def _ts_delay(x1, d: int):
     if isinstance(x1, np.ndarray):
         return pd.DataFrame(x1).shift(d).values
     else:
-        return x1.shift(d)
+        return x1.shift(int(d))
 
 
 def _ts_delta_delay(x1, d: int):
@@ -264,8 +292,10 @@ def _ts_product(x1, d: int):
 
 
 def _ts_mean(x1, d: int):
-    """moving average"""
-    return (x1).rolling(int(d), min_periods=int(d / 2)).mean()
+    if isinstance(x1, np.ndarray):
+        return pd.DataFrame(x1).rolling(int(d), min_periods=int(d / 2)).mean().values
+    else:
+        return (x1).rolling(int(d), min_periods=int(d / 2)).mean()
 
 
 def _ts_std(x1, d: int):
@@ -591,6 +621,7 @@ ts_MFI5 = Function(
 # 4. cross-sectional functions
 # 4.1 simple
 cs_rank = Function(function=_cs_rank, name='cs_rank', arity=1, function_type=2)
+cs_norm = Function(function=_cs_rank_norm, name='cs_norm', arity=1, function_type=2)
 
 
 function_map = {
@@ -655,4 +686,5 @@ function_map = {
     "ts_ADX": ts_ADX4,
     "ts_MFI": ts_MFI5,
     "cs_rank": cs_rank,
+    "cs_norm": cs_norm,
 }
