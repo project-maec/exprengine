@@ -4,46 +4,51 @@ import numpy as np
 import pandas as pd
 import numbers
 
-warnings.filterwarnings("ignore")  # prevent reporting 'All-NaN slice encountered'
+# prevent reporting 'All-NaN slice encountered'
+warnings.filterwarnings("ignore")
 
 
 class Function:
     def __init__(
-        self, function, name: str, arity: int, is_ts: int = 0, function_type: int=0, fixed_params: list = None
+        self, function, name: str, arity: int, is_ts: int = 0, function_type: int = 0, fixed_params: list = None
     ) -> None:
         self.function = function  # function
         self.name = name  # function name
         self.arity = arity  # number of function arguments
         # number of parameters forced to be constants
         self.is_ts = is_ts  # for backward compatibility 0: basis function, >0: time-series function
-        self.function_type = function_type # 0-->basic functions; 1--> ts functions; 2--> cross-sectional functions
-        if self.is_ts==1:
-            self.function_type=1
+        # 0-->basic functions; 1--> ts functions; 2--> cross-sectional functions
+        self.function_type = function_type
+        if self.is_ts == 1:
+            self.function_type = 1
         # arguments forced to be certain variables
         self.fixed_params = [] if fixed_params is None else fixed_params
 
     def __call__(self, *args):
-        if len(args)<=1:
+        if len(args) <= 1:
             return self.function(*args)
         args_list = list(args)
         for idx in range(len(args_list)):
-            a = args_list[idx] 
+            a = args_list[idx]
             if isinstance(a, numbers.Number):
                 if self.function_type == 0:
                     const_var = np.ones(args[0].shape)
-                    const_var = np.where(args[0].isna(),np.nan, const_var)
+                    const_var = np.where(args[0].isna(), np.nan, const_var)
                     args_list[idx] = const_var
         return self.function(*tuple(args_list))
 
 
 def __rolling(x1: pd.Series, d: int, function=None, **kwargs) -> np.ndarray:
     """auxiliary function, rolling more effectively than apply"""
-    incomplete_w = np.lib.stride_tricks.sliding_window_view(x1.values, d)[..., ::-1]
-    window = pd.DataFrame(np.vstack((np.full([d - 1, d], np.nan), incomplete_w)))
+    incomplete_w = np.lib.stride_tricks.sliding_window_view(
+        x1.values, d)[..., ::-1]
+    window = pd.DataFrame(
+        np.vstack((np.full([d - 1, d], np.nan), incomplete_w)))
     if function is None:  # just window
         return window
     else:
-        result = function(window, **kwargs)  # add other arguments needed in function
+        # add other arguments needed in function
+        result = function(window, **kwargs)
         for i in range(d - 1):
             result[i] = np.nan
         return result
@@ -61,7 +66,7 @@ def __scalar_ema(window: pd.DataFrame, alpha: float) -> np.ndarray:
     return np.nansum(window, axis=1) * alpha
 
 
-def _np_shift(x:np.ndarray, w:int) -> np.ndarray:
+def _np_shift(x: np.ndarray, w: int) -> np.ndarray:
     """shift function for numpy array, behaving like pandas.shift
 
     Args:
@@ -71,9 +76,10 @@ def _np_shift(x:np.ndarray, w:int) -> np.ndarray:
     Returns:
         np.ndarray: shifted array
     """
-    res = np.roll(x,w,axis=0)
+    res = np.roll(x, w, axis=0)
     res[:w] = np.nan
     return res
+
 
 def _square(x1):
     return x1**2
@@ -163,9 +169,10 @@ def _min(x1, x2):
 def _mean(x1, x2):
     return (x1 + x2) / 2
 
+
 def _rank_array(a):
     a2 = a[~np.isnan(a)]
-    if a2.shape[0]<=1:
+    if a2.shape[0] <= 1:
         return a
     u, v = np.unique(a2, return_inverse=True)
     a3 = (np.cumsum(np.bincount(v, minlength=u.size)) - 1)[v]
@@ -173,6 +180,7 @@ def _rank_array(a):
     res = a.copy().astype('float')
     res[~np.isnan(res)] = a3
     return res
+
 
 def _clear_by_cond(x1, x2, x3):
     """if x1 < x2 (keep NaN if and only if both x1 and x2 are NaN), then 0, else x3"""
@@ -188,26 +196,29 @@ def _if_cond_then_else(x1, x2, x3, x4):
     """if x1 < x2 (keep NaN if and only if both x1 and x2 are NaN), then x3, else x4"""
     return np.where(x1 < x2, x3, np.where(~np.isnan(x1) | ~np.isnan(x2), x4, np.nan))
 
+
 def _cs_rank(x1):
-    if isinstance(x1,pd.DataFrame):
+    if isinstance(x1, pd.DataFrame):
         res = x1.copy()
-        res.loc[:] = np.apply_along_axis(_rank_array,axis=1,arr=x1.values)
+        res.loc[:] = np.apply_along_axis(_rank_array, axis=1, arr=x1.values)
         return res
     elif isinstance(x1, np.ndarray):
-        res = np.apply_along_axis(_rank_array,axis=1,arr=x1)
+        res = np.apply_along_axis(_rank_array, axis=1, arr=x1)
         return res
     else:
         raise TypeError('input must be pd.DataFrame or np.ndarray')
+
 
 def _ts_delay_legacy(x1, d: int):
     """x1 d datetimes ago"""
     return pd.Series(x1).shift(d).values
 
-def _ts_delay(x1, d:int):
+
+def _ts_delay(x1, d: int):
     """
     x1 as of d intervals ago
     """
-    if isinstance(x1,np.ndarray):
+    if isinstance(x1, np.ndarray):
         return pd.DataFrame(x1).shift(d).values
     else:
         return x1.shift(d)
@@ -217,8 +228,9 @@ def _ts_delta_delay(x1, d: int):
     """difference between x1 and x1 d datetimes ago"""
     return x1 - pd.Series(x1).shift(d).values
 
+
 def _ts_delta(x1, d: int):
-    return x1 - _ts_delay(x1)
+    return x1 - _ts_delay(x1, d)
 
 
 def _ts_pct_change(x1, d: int):
@@ -356,10 +368,11 @@ def _ts_rank_legacy(x1, d: int):
         rank[i] = np.nan
     return rank
 
+
 def _ts_rank(x1, d: int):
     if d <= 0:
         raise ValueError('d value must be greater than 0')
-    rank_val = x1.rolling(int(d),int(d)).rank()
+    rank_val = x1.rolling(int(d), int(d)).rank()
     return rank_val/d
 
 
@@ -394,7 +407,8 @@ def _ts_kama(x1, d1: int, d2: int, d3: int):
     )  # f should greater than s
     change = np.abs(x1 - pd.Series(x1).shift(d))
     volatility = (
-        pd.Series(np.abs(x1 - pd.Series(x1).shift())).rolling(d, int(d / 2)).sum()
+        pd.Series(np.abs(x1 - pd.Series(x1).shift())
+                  ).rolling(d, int(d / 2)).sum()
     )
     ER = _div(change, volatility)
     SC = (ER * f + (1 - ER) * s) ** 2
@@ -427,7 +441,8 @@ def _ts_CCI(high, low, close, d: int):
 def _ts_ATR(high, low, close, d: int):
     """Average True Range: ts_mean(TR, d)
     TR (True Range) = max(High - Low, abs(High - previous Close), abs(Low - previous Close))"""
-    TR = pd.Series(np.maximum(high - low, high - close.shift(), low - close.shift()))
+    TR = pd.Series(np.maximum(high - low, high -
+                   close.shift(), low - close.shift()))
     return _ts_mean(TR, d)
 
 
@@ -492,7 +507,8 @@ mean2 = Function(function=_mean, name="mean", arity=2)
 
 # 2. conditional functions (scalar arguments, vectorized computation)
 # 2.1. three variables
-clear_by_cond3 = Function(function=_clear_by_cond, name="clear_by_cond", arity=3)
+clear_by_cond3 = Function(function=_clear_by_cond,
+                          name="clear_by_cond", arity=3)
 if_then_else3 = Function(function=_if_then_else, name="if_then_else", arity=3)
 # 2.2. four variables
 if_cond_then_else4 = Function(
@@ -513,11 +529,13 @@ ts_mean_return2 = Function(
 ts_max2 = Function(function=_ts_max, name="ts_max", arity=2, is_ts=1)
 ts_min2 = Function(function=_ts_min, name="ts_min", arity=2, is_ts=1)
 ts_sum2 = Function(function=_ts_sum, name="ts_sum", arity=2, is_ts=1)
-ts_product2 = Function(function=_ts_product, name="ts_product", arity=2, is_ts=1)
+ts_product2 = Function(function=_ts_product,
+                       name="ts_product", arity=2, is_ts=1)
 ts_mean2 = Function(function=_ts_mean, name="ts_mean", arity=2, is_ts=1)
 ts_std2 = Function(function=_ts_std, name="ts_std", arity=2, is_ts=1)
 ts_median2 = Function(function=_ts_median, name="ts_median", arity=2, is_ts=1)
-ts_midpoint2 = Function(function=_ts_midpoint, name="ts_midpoint", arity=2, is_ts=1)
+ts_midpoint2 = Function(function=_ts_midpoint,
+                        name="ts_midpoint", arity=2, is_ts=1)
 ts_skew2 = Function(function=_ts_skew, name="ts_skew", arity=2, is_ts=1)
 ts_kurt2 = Function(function=_ts_kurt, name="ts_kurt", arity=2, is_ts=1)
 ts_inverse_cv2 = Function(
@@ -525,7 +543,8 @@ ts_inverse_cv2 = Function(
 )
 ts_cov3 = Function(function=_ts_cov, name="ts_cov", arity=3, is_ts=1)
 ts_corr3 = Function(function=_ts_corr, name="ts_corr", arity=3, is_ts=1)
-ts_autocorr3 = Function(function=_ts_autocorr, name="ts_autocorr", arity=3, is_ts=2)
+ts_autocorr3 = Function(function=_ts_autocorr,
+                        name="ts_autocorr", arity=3, is_ts=2)
 ts_maxmin2 = Function(function=_ts_maxmin, name="ts_maxmin", arity=2, is_ts=1)
 ts_zscore2 = Function(function=_ts_zscore, name="ts_zscore", arity=2, is_ts=1)
 # 3.3. regression
@@ -541,7 +560,8 @@ ts_linear_intercept2 = Function(
 # 3.4. relevant position
 ts_argmax2 = Function(function=_ts_argmax, name="ts_argmax", arity=2, is_ts=1)
 ts_argmin2 = Function(function=_ts_argmin, name="ts_argmin", arity=2, is_ts=1)
-ts_argmaxmin2 = Function(function=_ts_argmaxmin, name="ts_argmaxmin", arity=2, is_ts=1)
+ts_argmaxmin2 = Function(function=_ts_argmaxmin,
+                         name="ts_argmaxmin", arity=2, is_ts=1)
 ts_rank2 = Function(function=_ts_rank, name="ts_rank", arity=2, is_ts=1)
 # 3.5. technical indicator
 ts_ema2 = Function(function=_ts_ema, name="ts_ema", arity=2, is_ts=1)
@@ -599,7 +619,7 @@ function_map = {
     "if_cond_then_else": if_cond_then_else4,
     "ts_delay": ts_delay2,
     "ts_delta": ts_delta2,
-    "ts_pct change": ts_pct_change2,
+    "ts_pct_change": ts_pct_change2,
     "ts_mean return": ts_mean_return2,
     "ts_max": ts_max2,
     "ts_min": ts_min2,
