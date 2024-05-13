@@ -61,6 +61,20 @@ def __scalar_ema(window: pd.DataFrame, alpha: float) -> np.ndarray:
     return np.nansum(window, axis=1) * alpha
 
 
+def _np_shift(x:np.ndarray, w:int) -> np.ndarray:
+    """shift function for numpy array, behaving like pandas.shift
+
+    Args:
+        x (np.ndarray): input numpy array
+        w (int): shift window
+
+    Returns:
+        np.ndarray: shifted array
+    """
+    res = np.roll(x,w,axis=0)
+    res[:w] = np.nan
+    return res
+
 def _square(x1):
     return x1**2
 
@@ -185,14 +199,26 @@ def _cs_rank(x1):
     else:
         raise TypeError('input must be pd.DataFrame or np.ndarray')
 
-def _ts_delay(x1, d: int):
+def _ts_delay_legacy(x1, d: int):
     """x1 d datetimes ago"""
     return pd.Series(x1).shift(d).values
 
+def _ts_delay(x1, d:int):
+    """
+    x1 as of d intervals ago
+    """
+    if isinstance(x1,np.ndarray):
+        return pd.DataFrame(x1).shift(d).values
+    else:
+        return x1.shift(d)
 
-def _ts_delta(x1, d: int):
+
+def _ts_delta_delay(x1, d: int):
     """difference between x1 and x1 d datetimes ago"""
     return x1 - pd.Series(x1).shift(d).values
+
+def _ts_delta(x1, d: int):
+    return x1 - _ts_delay(x1)
 
 
 def _ts_pct_change(x1, d: int):
