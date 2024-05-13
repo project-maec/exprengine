@@ -197,6 +197,13 @@ def _rank_norm(a):
     res[~np.isnan(res)] = a3
     return res
 
+def _demean(a):
+    if np.nansum(np.abs(a)) <= 0:
+        return a
+    res = a - np.nanmean(a)
+    # res = res*1/np.nansum(np.abs(a))
+    return res
+
 
 def _clear_by_cond(x1, x2, x3):
     """if x1 < x2 (keep NaN if and only if both x1 and x2 are NaN), then 0, else x3"""
@@ -223,6 +230,17 @@ def _cs_rank(x1):
         return res
     else:
         raise TypeError('input must be pd.DataFrame or np.ndarray')
+
+def _cs_demean(x1):
+    if isinstance(x1, pd.DataFrame):
+        res = x1.copy()
+        res.loc[:] = np.apply_along_axis(_demean, axis=1, arr=x1.values)
+        return res
+    elif isinstance(x1, np.ndarray):
+        res = np.apply_along_axis(_demean, axis=1, arr=x1)
+        return res
+    else:
+        raise TypeError('input must be pd.DataFrame or np.ndarray')       
 
 def _cs_rank_norm(x1):
     if isinstance(x1, pd.DataFrame):
@@ -622,6 +640,7 @@ ts_MFI5 = Function(
 # 4.1 simple
 cs_rank = Function(function=_cs_rank, name='cs_rank', arity=1, function_type=2)
 cs_norm = Function(function=_cs_rank_norm, name='cs_norm', arity=1, function_type=2)
+cs_demean = Function(function=_cs_demean, name='_cs_demean', arity=1, function_type=2)
 
 
 function_map = {
@@ -687,4 +706,5 @@ function_map = {
     "ts_MFI": ts_MFI5,
     "cs_rank": cs_rank,
     "cs_norm": cs_norm,
+    "cs_demean":cs_demean,
 }
