@@ -16,3 +16,5 @@ from .function import *
 from .fitness import *
 from .parser import *
 from .syntax_tree import *
+from .sim import * 
+from .simgrid import *
