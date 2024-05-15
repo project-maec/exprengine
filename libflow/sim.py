@@ -42,6 +42,7 @@ class Simflow:
             setattr(self, key, value)
 
         self.l_train_data = None
+        self.l_signal_data = None
 
 
     def set_target(self, Y):
@@ -86,7 +87,7 @@ class Simflow:
             l_train_data[x] = X.pivot(index='date',columns='ticker',values=x)
         self.l_train_data = l_train_data
 
-    def compute(self,X):
+    def compute_all(self,X):
         l_signal_data = {}
         if self.l_signal_data is None:
             self.load_train_data(X)
@@ -98,8 +99,13 @@ class Simflow:
         self.l_signal_data = l_signal_data
         return
 
-    def score(self, Y):
-
+    def score(self, sname, Y):
+        signal_data = self.l_signal_data[sname]
+        if not signal_data.index.equals(Y.index):
+            raise ValueError(f'{sname}.index is different from Y.index')
+        if not signal_data.columns.equals(Y.columns):
+            raise ValueError(f'{sname}.columns is different from Y.columns')
+        
         return
 
 map_cal2mic={
