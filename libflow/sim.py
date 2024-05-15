@@ -30,7 +30,7 @@ class Simflow:
         self.run_optim = False
         self.return_target = None
         self.delta_neutral = True
-        self.signal_list = []
+        self.signal_dict = {}
         self.startdate = 20150101
         self.enddate = 20230101
         self.calendar = ['US']
@@ -41,6 +41,9 @@ class Simflow:
         for key, value in cfg.items():
             setattr(self, key, value)
 
+        self.l_train_data = None
+
+
     def set_target(self, Y):
         """
         @param Y: pd series for the required dates
@@ -48,14 +51,14 @@ class Simflow:
 
         return
 
-    def add_alpha(self, alpha: str):
+    def add_alpha(self, alpha: str, alpha_name: str):
         alpha_expr = self.expr_parser.parse(alpha)
-        self.signal_list.append(alpha_expr)
+        self.signal_dict[alpha_name]= alpha_expr
         return
 
     def get_required_fields(self):
         list_fields = []
-        for a in self.signal_list:
+        for a in self.signal_dict.values():
             l_alpha_nodes = preorder_traversal(a)
             for e in l_alpha_nodes:
                 if isinstance(e,str):
@@ -74,26 +77,28 @@ class Simflow:
         else:
             return dates
         
-
-    def compute(self,X):
+    def load_train_data(self, X_train):
         required_flds = self.get_required_fields()
-        if len(X.index.names)>1:
-            X = X.reset_index()
+        if len(X_train.index.names)>1:
+            X = X_train.reset_index()
         l_train_data = {}
         for x in required_flds:
             l_train_data[x] = X.pivot(index='date',columns='ticker',values=x)
         self.l_train_data = l_train_data
 
+    def compute(self,X):
         l_signal_data = {}
-        for signal in self.signal_list:
+        if self.l_signal_data is None:
+            self.load_train_data(X)
+
+        for sname in self.signal_dict.keys():
             if self.verbose>0:
-                print(f'computing {signal}')
-            l_signal_data[signal] = signal(l_train_data)
+                print(f'computing {sname}')
+            l_signal_data[sname] =  self.signal_dict[sname](self.l_train_data)
         self.l_signal_data = l_signal_data
         return
 
-    def score(self, X, Y):
-
+    def score(self, Y):
 
         return
 
