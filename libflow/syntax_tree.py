@@ -5,6 +5,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import numbers
 
 from .function import Function
 from .fitness import Fitness
@@ -107,7 +108,8 @@ class SyntaxTree:
         self.ts_const_range = ts_const_range
         self.build_preference = build_preference
         self.metric = metric
-        # self.transformer = transformer
+        # decommissioned transformer
+        self.transformer = None 
         self.transformer_kwargs = transformer_kwargs
         self.parsimony_coefficient = parsimony_coefficient
         self.ttl_shift = 0  # int; sum of d as time-series constant
@@ -233,19 +235,28 @@ class SyntaxTree:
         else:
             return random.choice(candidates)
 
-    def execute(self, X: pd.DataFrame) -> Any:
+    def execute(self, X) -> Any:
         """
         Execute the program according to X
         @param X: training data
         """
-        outcome = np.hstack(
-            [np.full(self.ttl_shift, np.nan), self.nodes[0](X)[self.ttl_shift :]]
-        )
+        # outcome = np.hstack(
+        #     [np.full(self.ttl_shift, np.nan), self.nodes[0](X)[self.ttl_shift :]]
+        # )
+        outcome = self.nodes[0](X)
+        
         if self.transformer is not None:
             outcome = self.transformer(X, outcome, **self.transformer_kwargs)
         else:
-            if outcome.shape[0] == X.shape[0]:
-                outcome=pd.Series(outcome,index=X.index)
+            if isinstance(outcome, numbers.Number):
+                return np.zeros(list(X.values())[0].shape)
+            if isinstance(X,pd.DataFrame):
+                if outcome.shape[0] == X.shape[0]:
+                    outcome=pd.Series(outcome,index=X.index)
+            elif isinstance(X,dict):
+                if outcome.shape[0] == list(X.values())[0].shape[0]:
+                    return outcome
+
         return outcome
 
     def fitness_legacy(self, X: pd.DataFrame, benchmark: pd.Series) -> float:
