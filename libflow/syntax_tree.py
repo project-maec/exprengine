@@ -248,7 +248,7 @@ class SyntaxTree:
                 outcome=pd.Series(outcome,index=X.index)
         return outcome
 
-    def fitness(self, X: pd.DataFrame, benchmark: pd.Series) -> float:
+    def fitness_legacy(self, X: pd.DataFrame, benchmark: pd.Series) -> float:
         """
         Evaluate the penalized fitness of the program according to X, benchmark
         @param X: training data
@@ -262,6 +262,22 @@ class SyntaxTree:
             raise ValueError('metrics calculation failed')
         penalty = self.parsimony_coefficient * len(self) * self.metric.sign
         return raw_fitness - penalty
+
+    def fitness(self, X, y) -> float:
+        """
+        Evaluate the penalized fitness of the program according to X, benchmark
+        @param X: training data
+        @param benchmark: first input of metric()
+        """
+        if self.metric is None:
+            raise ValueError("metric must be set")
+        try:
+            raw_fitness = self.metric(Y, self.execute(X))
+        except:
+            raise ValueError('metrics calculation failed')
+        penalty = self.parsimony_coefficient * len(self) * self.metric.sign
+        return raw_fitness - penalty
+        
 
     def crossover(self, donor: "SyntaxTree") -> "SyntaxTree":
         self_copy, donor_copy = deepcopy(self), deepcopy(donor)
