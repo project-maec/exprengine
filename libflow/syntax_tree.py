@@ -272,7 +272,7 @@ class SyntaxTree:
         if self.metric is None:
             raise ValueError("metric must be set")
         try:
-            raw_fitness = self.metric(Y, self.execute(X))
+            raw_fitness = self.metric(y, self.execute(X))
         except:
             raise ValueError('metrics calculation failed')
         penalty = self.parsimony_coefficient * len(self) * self.metric.sign
