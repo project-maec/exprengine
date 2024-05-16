@@ -53,7 +53,8 @@ class SymbolicRegressor:
         self.ts_const_range = ts_const_range
         self.build_preference = build_preference
         self.metric = fitness_map[metric]
-        self.transformer = None if transformer is None else backtester_map[transformer]
+        # self.transformer = None if transformer is None else backtester_map[transformer]
+        self.transformer = None
         self.transformer_kwargs = transformer_kwargs
         self.parsimony_coefficient = parsimony_coefficient
         self.trees: list[SyntaxTree] = []
