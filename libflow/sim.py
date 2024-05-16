@@ -45,6 +45,7 @@ class Simflow:
 
         self.l_train_data = None
         self.l_signal_data = None
+        self.train_label = None
 
     def set_target(self, Y):
         """
@@ -99,21 +100,21 @@ class Simflow:
         self.l_signal_data = l_signal_data
         return
 
-    def score(self, sname, Y):
+    def score(self, sname, labels=None, sample_weights = None):
         signal_data = self.l_signal_data[sname]
-        if not signal_data.index.equals(Y.index):
+        if not signal_data.index.equals(labels.index):
             raise ValueError(f'{sname}.index is different from Y.index')
-        if not signal_data.columns.equals(Y.columns):
+        if not signal_data.columns.equals(labels.columns):
             raise ValueError(f'{sname}.columns is different from Y.columns')
 
         is_dates = self.get_in_sample_dates(signal_data.index)
-        ic_series = row_wise_corr(signal_data.values,Y.values)
+        ic_series = row_wise_corr(signal_data.values,labels.values)
         ic_series.index = signal_data.index
         ic_series = ic_series[ic_series.index.isin(is_dates)]
 
-        return ic_series
+        return get_information_table(ic_series)
     
-    def score_os(self, sname, Y):
+    def score_os(self, sname, Y, sample_weights = None):
         signal_data = self.l_signal_data[sname]
         if not signal_data.index.equals(Y.index):
             raise ValueError(f'{sname}.index is different from Y.index')
@@ -125,7 +126,7 @@ class Simflow:
         ic_series.index = signal_data.index
         # ic_series = ic_series[ic_series.index.isin(is_dates)]
 
-        return ic_series
+        return get_information_table(ic_series)
 
 
 map_cal2mic = {
@@ -201,3 +202,21 @@ def row_wise_corr(arr1, arr2, num_workers=4):
     df_res = pd.DataFrame(
         res, columns=['idx', 'val']).sort_values('idx')['val']
     return pd.Series(df_res.values,name='daily_ic')
+
+
+def get_information_table(ic_data):
+    ic_data = ic_data.dropna()
+    ic_summary_res = {}
+    ic_summary_res["ic"] = ic_data.mean()
+    ic_summary_res["ic_std"] = ic_data.std()
+    ic_summary_res["ic_ir"] = \
+        ic_data.mean() / ic_data.std()
+    t_stat, p_value = stats.ttest_1samp(ic_data, 0)
+    ic_summary_res["t_stat"] = t_stat
+    ic_summary_res["p_val"] = p_value
+    ic_summary_res["ic_skew"] = stats.skew(ic_data)
+    ic_summary_res["ic_kurt"] = stats.kurtosis(ic_data)
+
+    return ic_summary_res
+
+        
