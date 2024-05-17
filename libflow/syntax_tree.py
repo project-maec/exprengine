@@ -11,10 +11,10 @@ from .function import Function
 from .fitness import Fitness
 
 class Node:
-    def __init__(self, data, is_ts: float = False, children = []):
+    def __init__(self, data, is_ts: float = False):
         self.data = data  # Function (function), str (variable) or int (constant)
         self.parent: "Node" = None
-        self.children = children  # nodes in order of function arguments
+        self.children: list[Node] = []  # nodes in order of function arguments
         self.is_ts = is_ts  # if data of this node is time-series const
 
     def __str__(self):
@@ -54,6 +54,12 @@ class Node:
     def add_child(self, child: "Node"):
         # always insert to the front
         self.children.insert(0, child)
+        # also set parent of child
+        child.parent = self
+    
+    def extend_child(self, child: "Node"):
+        # always insert to the back
+        self.children.insert(len(self.children), child)
         # also set parent of child
         child.parent = self
 

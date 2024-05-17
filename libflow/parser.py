@@ -43,6 +43,7 @@ class Parser:
             depth = 0
             last_split = 0
             
+            node = Node(data, is_ts=False)
             # split arguments considering nested functions
             for i, char in enumerate(inside_parenthesis):
                 if char == '(':
@@ -50,10 +51,10 @@ class Parser:
                 elif char == ')':
                     depth -= 1
                 elif char == ',' and depth == 0:
-                    args.append(self.parse(inside_parenthesis[last_split:i].strip()))
+                    node.extend_child(self.parse(inside_parenthesis[last_split:i].strip()))
                     last_split = i + 1
-            args.append(self.parse(inside_parenthesis[last_split:].strip()))
-            return Node(data, is_ts=False, children=args)
+            node.extend_child(self.parse(inside_parenthesis[last_split:].strip()))
+            return node
         else:
             if expression.isnumeric():
                 expression=float(expression)
