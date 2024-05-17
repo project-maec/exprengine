@@ -53,7 +53,7 @@ class Parser:
                     args.append(self.parse(inside_parenthesis[last_split:i].strip()))
                     last_split = i + 1
             args.append(self.parse(inside_parenthesis[last_split:].strip()))
-            return Node(data, args)
+            return Node(data, is_ts=False, children=args)
         else:
             if expression.isnumeric():
                 expression=float(expression)
