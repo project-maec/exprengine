@@ -37,13 +37,19 @@ class Node:
             return self.data(*fixed_var, *free_var)
         elif isinstance(self.data, str):
             return X[self.data]
-        # elif self.is_ts:
-            # return self.data
         else:
-            # input except time-series constant must be a vector
-            # return np.full(len(X), self.data)
-            # simply return vector
             return self.data
+        # elif self.is_ts:
+        #     return self.data
+        # else:
+        #     # input except time-series constant must be a vector
+        #     # return np.full(len(X), self.data)
+        #     # simply return vector
+        #     if isinstance(X,pd.DataFrame):
+        #         return pd.DataFrame(np.ones(X.shape)*self.data, index=X.index, columns=X.columns)
+        #     else:
+        #         df_input_ = list(X.values())[0]
+        #         return pd.DataFrame(np.ones(df_input_.shape)*self.data, index=df_input_.index, columns=df_input_.columns)
 
     def add_child(self, child: "Node"):
         # always insert to the front
@@ -58,14 +64,6 @@ class Node:
         self.children.insert(index, new_child)
         # also set parent of new child
         new_child.parent = self
-
-    def fitness(self, X: Union[pd.DataFrame, dict], y):
-        """
-        @param X: input
-        @param y: label
-        """
-
-        return
     
 
 
@@ -113,8 +111,8 @@ class SyntaxTree:
         self.transformer_kwargs = transformer_kwargs
         self.parsimony_coefficient = parsimony_coefficient
         self.ttl_shift = 0  # int; sum of d as time-series constant
-        self.__build()
-        self.nodes = self.__flatten()  # list; flattened tree
+        # self.__build()
+        # self.nodes = self.__flatten()  # list; flattened tree
 
     def __str__(self) -> str:
         return str(self.nodes[0])
@@ -249,7 +247,7 @@ class SyntaxTree:
             outcome = self.transformer(X, outcome, **self.transformer_kwargs)
         else:
             if isinstance(outcome, numbers.Number):
-                return np.zeros(list(X.values())[0].shape)
+                return list(X.values())[0].fillna(0)*0
             if isinstance(X,pd.DataFrame):
                 if outcome.shape[0] == X.shape[0]:
                     outcome=pd.Series(outcome,index=X.index)
@@ -287,6 +285,7 @@ class SyntaxTree:
         except:
             raise ValueError('metrics calculation failed')
         penalty = self.parsimony_coefficient * len(self) * self.metric.sign
+        # print(f'computed {self}, fitness_val == {raw_fitness - penalty}')
         return raw_fitness - penalty
         
 
