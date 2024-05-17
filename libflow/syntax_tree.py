@@ -11,10 +11,10 @@ from .function import Function
 from .fitness import Fitness
 
 class Node:
-    def __init__(self, data, children=[], is_ts: float = False):
+    def __init__(self, data, is_ts: float = False):
         self.data = data  # Function (function), str (variable) or int (constant)
         self.parent: "Node" = None
-        self.children = children
+        self.children: list[Node] = []  # nodes in order of function arguments
         self.is_ts = is_ts  # if data of this node is time-series const
 
     def __str__(self):
@@ -111,8 +111,8 @@ class SyntaxTree:
         self.transformer_kwargs = transformer_kwargs
         self.parsimony_coefficient = parsimony_coefficient
         self.ttl_shift = 0  # int; sum of d as time-series constant
-        # self.__build()
-        # self.nodes = self.__flatten()  # list; flattened tree
+        self.__build()
+        self.nodes = self.__flatten()  # list; flattened tree
 
     def __str__(self) -> str:
         return str(self.nodes[0])
