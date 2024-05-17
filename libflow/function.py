@@ -29,12 +29,27 @@ class Function:
         if len(args) <= 1:
             return self.function(*args)
         args_list = list(args)
-        for idx in range(len(args_list)):
+        num_of_args = len(args_list)
+        args_data = None
+        for a in args_list:
+            if 'shape' in dir(a):
+                args_data = a
+                break
+        if args_data is None:
+            if num_of_args>1:
+                return 1
+            else:
+                try: 
+                    self.function(*tuple(args_list))
+                except:
+                    print(f'{self.data.name} failed')
+                    return 1
+        for idx in range(num_of_args):
             a = args_list[idx]
             if isinstance(a, numbers.Number):
                 if self.function_type == 0:
-                    const_var = np.ones(args[0].shape)
-                    const_var = np.where(args[0].isna(), np.nan, const_var)
+                    const_var = np.ones(args_data.shape)
+                    const_var = np.where(np.isnan(args_data), np.nan, const_var)
                     args_list[idx] = const_var
         return self.function(*tuple(args_list))
 

@@ -258,6 +258,7 @@ class SyntaxTree:
                 if outcome.shape[0] == X.shape[0]:
                     outcome=pd.Series(outcome,index=X.index)
             elif isinstance(X,dict):
+                print(X)
                 if outcome.shape[0] == list(X.values())[0].shape[0]:
                     return outcome
 
