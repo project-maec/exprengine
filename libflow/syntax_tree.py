@@ -253,15 +253,15 @@ class SyntaxTree:
             outcome = self.transformer(X, outcome, **self.transformer_kwargs)
         else:
             if isinstance(outcome, numbers.Number):
-                return list(X.values())[0].fillna(0)*0
+                return np.ones(list(X.values())[0].shape)*outcome
             if isinstance(X,pd.DataFrame):
                 if outcome.shape[0] == X.shape[0]:
                     outcome=pd.Series(outcome,index=X.index)
-            elif isinstance(X,dict):
-                print(X)
-                if outcome.shape[0] == list(X.values())[0].shape[0]:
-                    return outcome
-
+            # elif isinstance(X,dict):
+            #     if len(outcome.shape)<=0:
+            #         print(outcome)
+            #     if outcome.shape[0] == list(X.values())[0].shape[0]:
+            #         return outcome
         return outcome
 
     def fitness_legacy(self, X: pd.DataFrame, benchmark: pd.Series) -> float:
@@ -289,6 +289,8 @@ class SyntaxTree:
             raise ValueError("metric must be set")
         try:
             raw_fitness = self.metric(y, self.execute(X))
+            if np.isnan(raw_fitness):
+                print(f'{self} fitness is NAN')
         except:
             raise ValueError('metrics calculation failed')
         penalty = self.parsimony_coefficient * len(self) * self.metric.sign

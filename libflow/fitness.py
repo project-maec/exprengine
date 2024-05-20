@@ -46,7 +46,7 @@ def _sharpe_ratio_legacy(act_ret_label: pd.Series, pos: pd.Series, r_f: float | 
 def _sharpe_ratio(y,y_pred) -> float:
     y_copy = y.copy()
     if not 'index' in dir(y_pred):
-        print ('y_pred is not a dataframe')
+        print (f'y_pred is not a dataframe, y_pred type {type(y_pred)}')
         return np.nan
     if not y_pred.index.equals(y.index):
         raise ValueError('y_pred.index is different from y.index')
@@ -64,7 +64,10 @@ def _sharpe_ratio(y,y_pred) -> float:
 
 def _ic(y, y_pred) -> float:
     if not 'index' in dir(y_pred):
-        print ('y_pred is not a dataframe')
+        # print (f'y_pred is not a dataframe, y_pred type {type(y_pred)}')
+        # if isinstance(y_pred, np.ndarray):
+        #     print(f'y_pred shape -- {y_pred.shape}')
+        #     print(f'y_pred {y_pred}')
         return np.nan
     if not y_pred.index.equals(y.index):
         raise ValueError('y_pred.index is different from y.index')
@@ -76,7 +79,7 @@ def _ic(y, y_pred) -> float:
 
 def _icir(y,y_pred)-> float:
     if not 'index' in dir(y_pred):
-        print ('y_pred is not a dataframe')
+        print (f'y_pred is not a dataframe, y_pred type {type(y_pred)}')
         return np.nan
     if not y_pred.index.equals(y.index):
         raise ValueError('y_pred.index is different from y.index')
