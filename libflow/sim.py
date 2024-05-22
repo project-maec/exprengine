@@ -90,7 +90,7 @@ class Simflow:
 
     def compute_all(self, X):
         l_signal_data = {}
-        if self.l_signal_data is None:
+        if self.l_train_data is None:
             self.load_train_data(X)
 
         for sname in self.signal_dict.keys():
